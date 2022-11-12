@@ -51,7 +51,7 @@ namespace Reversi.Model
                 {
                     if (_table.TileAt(i, j) == targetTile)
                     {
-                        List<Point> some = AvailableTiles(i, j);
+                        List<Point> some = AvailableTiles(i, j, _table, CurrentPlayer);
                         points.AddRange(some);
                     }
                 }
@@ -59,83 +59,103 @@ namespace Reversi.Model
             return points;
         }
 
-        private List<Point> AvailableTiles(int i, int j)
+        private List<Point> AvailableTiles(Table table, Player player)
         {
-            if (i > Size - 1 || j > Size - 1 || i < 0 || j < 0)
+            List<Point> points = new();
+
+            TileValue targetTile = Tile.MakeTileValue(player); // get the target tile value
+
+            for (int i = 0; i < table.Size; i++)
+            {
+                for (int j = 0; j < table.Size; j++)
+                {
+                    if (table.TileAt(i, j) == targetTile)
+                    {
+                        List<Point> some = AvailableTiles(i, j, table, player);
+                        points.AddRange(some);
+                    }
+                }
+            }
+            return points;
+        }
+
+        private List<Point> AvailableTiles(int i, int j, Table table, Player player)
+        {
+            if (i > table.Size - 1 || j > table.Size - 1 || i < 0 || j < 0)
             {
                 return new List<Point>(); // maybe throw exception for index out of bounds if necessary
             }
 
             List<Point> points = new();
 
-            TileValue target = CurrentPlayer == Player.BLACK ? TileValue.WHITE : TileValue.BLACK; // the targets are tiles of the OTHER player
+            TileValue target = player == Player.BLACK ? TileValue.WHITE : TileValue.BLACK; // the targets are tiles of the OTHER player
 
             // check vertical below
             {
                 int k = i + 1;
-                while (k < Size && _table.TileAt(k, j) == target) k++;
+                while (k < table.Size && table.TileAt(k, j) == target) k++;
                 
-                if (i + 1 < k && k < Size) points.Add(new Point(k, j));
+                if (i + 1 < k && k < table.Size) points.Add(new Point(k, j));
             }
             // check vertical over
             {
                 int k = i - 1;
-                while (-1 < k && _table.TileAt(k , j) == target) k--;
+                while (-1 < k && table.TileAt(k , j) == target) k--;
                 
                 if (-1 < k && k < i - 1) points.Add(new Point(k, j));
             }
             // check left horizontal
             {
                 int k = j - 1;
-                while (-1 < k && _table.TileAt(i, k) == target) k--;
+                while (-1 < k && table.TileAt(i, k) == target) k--;
 
                 if (-1 < k && k < j - 1) points.Add(new Point(i, k));
             }
             // check right horizontal
             {
                 int k = j + 1;
-                while (k < Size && _table.TileAt(i, k) == target) k++;
+                while (k < table.Size && table.TileAt(i, k) == target) k++;
 
-                if (j + 1 < k && k < Size) points.Add(new Point(i, k));
+                if (j + 1 < k && k < table.Size) points.Add(new Point(i, k));
             }
             // check left-left diagonal
             {
                 int k = i + 1, l = j + 1;
-                while (k < Size && l < Size && _table.TileAt(k, l) == target)
+                while (k < table.Size && l < table.Size && table.TileAt(k, l) == target)
                 {
                     k++; l++;
                 }
-                if (k > i + 1 && l > j + 1 && k < Size && l < Size) points.Add(new Point(k, l));
+                if (k > i + 1 && l > j + 1 && k < table.Size && l < table.Size) points.Add(new Point(k, l));
             }
             // check upper-left diagonal
             {
                 int k = i - 1, l = j - 1;
-                while (k < Size && l < Size && _table.TileAt(k, l) == target)
+                while (k < table.Size && l < table.Size && table.TileAt(k, l) == target)
                 {
                     k--; l--;
                 }
-                if (k < i - 1 && l < j - 1 && k > -1 && l < Size) points.Add(new Point(k, l));
+                if (k < i - 1 && l < j - 1 && k > -1 && l < table.Size) points.Add(new Point(k, l));
             }
             // check upper-rigth diagonal
             {
                 int k = i - 1, l = j + 1;
-                while (k > -1 && l < Size && _table.TileAt(k, l) == target)
+                while (k > -1 && l < table.Size && table.TileAt(k, l) == target)
                 {
                     k--; l++;
                 }
-                if (k < i - 1 && l > j + 1 && k > -1 && l < Size) points.Add(new Point(k, l));
+                if (k < i - 1 && l > j + 1 && k > -1 && l < table.Size) points.Add(new Point(k, l));
             }
             // check lower-rigth diagonal
             {
                 int k = i + 1, l = j - 1;
-                while (k < Size && l > -1 && _table.TileAt(k, l) == target)
+                while (k < table.Size && l > -1 && table.TileAt(k, l) == target)
                 {
                     k++; l--;
                 }
-                if (k > i + 1 && l < j - 1 && k < Size && l > -1) points.Add(new Point(k, l));
+                if (k > i + 1 && l < j - 1 && k < table.Size && l > -1) points.Add(new Point(k, l));
             }
             // remove occupied points
-            points.RemoveAll(elem => _table.TileAt(elem.X, elem.Y) != TileValue.EMPTY);
+            points.RemoveAll(elem => table.TileAt(elem.X, elem.Y) != TileValue.EMPTY);
 
             return points;
         }
@@ -144,6 +164,25 @@ namespace Reversi.Model
         {
             if (CurrentPlayer == Player.BLACK) return Player.WHITE;
             return Player.BLACK;
+        }
+
+        private Player OtherPlayer(Player player)
+        {
+            if (player == Player.BLACK) return Player.WHITE;
+            return Player.BLACK;
+        }
+
+        private int CountPlayer(Player player)
+        {
+            int count = 0;
+            for (int i = 0; i < Size; i++)
+            {
+                for (int j = 0; j < Size; j++)
+                {
+                    if (_table.TileAt(i, j) == Tile.MakeTileValue(player)) count++;
+                }
+            }
+            return count;
         }
 
         private void PaintTiles(int row, int col, List<Point> points, Table table) // changes tiles 
@@ -219,19 +258,6 @@ namespace Reversi.Model
             foreach (Point p in points) table.ChangeTileAt(p.X, p.Y, thisp);
         }
 
-        private int CountPlayer(Player player)
-        {
-            int count = 0;
-            for (int i = 0; i < Size; i++)
-            {
-                for (int j = 0; j < Size; j++)
-                {
-                    if (_table.TileAt(i, j) == Tile.MakeTileValue(player)) count++;
-                }
-            }
-            return count;
-        }
-
         /// Public Methods
         public TileValue? TileAt(int i, int j)
         {
@@ -304,7 +330,7 @@ namespace Reversi.Model
 
                 if (AvailableTiles().Count == 0) { OnGameEnded(); } // game ends on double pass
             }
-            else // TODO: Actually compute best move
+            else
             {
                 List<Point> availables = AvailableTiles();
 
@@ -345,7 +371,67 @@ namespace Reversi.Model
             }
         }
 
-        /// Event triggers
+        private Point BestMoveCoords(Table table, Player player)
+        {
+            if (AvailableTiles(table, player).Count == 0)
+            {
+                return new Point(-1, -1);
+            }
+            else // TODO: Actually compute best move
+            {
+                List<Point> availables = AvailableTiles(table, player);
+
+                List<Table> tables = new();
+
+                int maxScore = 0;
+                int maxIndex = 0; // index to coordinates for best move
+                for (int i = 0; i < availables.Count; i++)
+                {
+                    tables.Add(Table.CopyTable(table));
+                }
+                for (int i = 0; i < availables.Count; i++)
+                {
+                    int x = availables[i].X; int y = availables[i].Y;
+                    tables[i].ChangeTileAt(x, y, Tile.MakeTileValue(player));
+                    List<Point> points = new(); PaintTiles(x, y, points, tables[i]); points.Add(new Point(x, y));
+
+                    if (points.Count > maxScore)
+                    {
+                        maxScore = points.Count; maxIndex = i;
+                    }
+                }
+
+                int mx = availables[maxIndex].X;
+                int my = availables[maxIndex].Y;
+
+                return new Point(mx, my);
+            }
+        }
+
+        public void MMBestMove()
+        {
+            // TODO:
+        }
+
+        #region Min-max implementation
+
+        private Point MMCalculateMove(Table table, Player player)
+        {
+            Console.WriteLine("MMCalculate Move called.");
+            Point result = new Point(-1, -1);
+            MinMaxMove(10, table, player, true, result);
+            return result;
+        }
+
+        private int MinMaxMove(int depth, Table table, Player player, bool isMaximizing, Point result) // result provided in parameter
+        {
+            // TODO:
+            return 0;
+        }
+
+        #endregion
+
+        /// Event triggers ///
         private void OnTilesChanged(List<Point> points, TileValue value) // tile changed trigger
         {
             TilesChanged?.Invoke(this, new TilesChangedEventArgs(points, value)); // invokes if not null
@@ -355,6 +441,6 @@ namespace Reversi.Model
         {
             GameEnded?.Invoke(this, EventArgs.Empty);
         }
-        ///
+        //////////////////////
     }
 }

@@ -33,6 +33,7 @@ namespace Reversi
             if (OnePlayer)
             {
                 MoveTimer.Stop();
+                //_model.RandomMove();
                 _model.BestMove();
                 UpdateButtonGrid(); UpdateStatusLabels();
                 panel.Enabled = true;
